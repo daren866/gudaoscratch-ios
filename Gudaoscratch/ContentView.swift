@@ -154,7 +154,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             if let url = urls.first {
                 DispatchQueue.main.async {
-                    onPick(url)
+                    self.onPick(url)
                 }
             }
         }
