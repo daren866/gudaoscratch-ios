@@ -386,8 +386,8 @@ class ZipHelper {
         return data.withUnsafeBytes { sourceBuffer in
             var destination = [UInt8](repeating: 0, count: bufferSize)
             
-            return destination.withUnsafeMutableBytes { destinationBuffer in
-                let status = compression_decode_buffer(
+            let status = destination.withUnsafeMutableBytes { destinationBuffer in
+                compression_decode_buffer(
                     destinationBuffer.baseAddress!,
                     destinationBuffer.count,
                     sourceBuffer.baseAddress!,
@@ -395,13 +395,13 @@ class ZipHelper {
                     nil,
                     algorithm
                 )
-                
-                guard status != 0 else {
-                    return nil
-                }
-                
-                return Data(destination[0..<status])
             }
+            
+            guard status != 0 else {
+                return nil
+            }
+            
+            return Data(destination[0..<status])
         }
     }
 }
