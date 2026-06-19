@@ -5,9 +5,6 @@ let deploymentTargets: DeploymentTargets = .iOS("15.0")
 let project = Project(
     name: "Gudaoscratch",
     organizationName: "Example",
-    packages: [
-        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0")
-    ],
     settings: .settings(
         base: [
             "DEVELOPMENT_TEAM": "<YOUR_DEVELOPMENT_TEAM_ID>",
@@ -27,10 +24,7 @@ let project = Project(
             deploymentTargets: deploymentTargets,
             infoPlist: .file(path: "Gudaoscratch/Info.plist"),
             sources: ["Gudaoscratch/**/*.swift"],
-            resources: ["Gudaoscratch/Assets.xcassets"],
-            dependencies: [
-                .external(name: "ZIPFoundation")
-            ]
+            resources: ["Gudaoscratch/Assets.xcassets"]
         )
     ]
 )

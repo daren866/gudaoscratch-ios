@@ -25,10 +25,7 @@ jobs:
 
     - name: Generate Project with Tuist (iOS 15.0)
       run: |
-        # 在生成项目时设置部署目标（如果 Tuist 支持）
-        # 或者通过环境变量影响 Tuist 的生成
         export IPHONEOS_DEPLOYMENT_TARGET=15.0
-        tuist install
         tuist generate --no-open
         ls -la *.xcodeproj || echo "检查项目文件"
 

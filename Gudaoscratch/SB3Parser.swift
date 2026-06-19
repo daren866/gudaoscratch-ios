@@ -1,5 +1,5 @@
 import Foundation
-import ZIPFoundation
+import Compression
 
 struct SB3Project {
     var targets: [SB3Target]
@@ -100,11 +100,7 @@ class SB3Parser {
     }
     
     static func parse(from data: Data) -> SB3Project? {
-        guard let zipArchive = try? ZipArchive(data: data) else {
-            return nil
-        }
-        
-        guard let jsonData = zipArchive.fileData(named: "project.json") else {
+        guard let jsonData = ZipHelper.extractFile(named: "project.json", from: data) else {
             return nil
         }
         
@@ -350,32 +346,124 @@ class SB3Parser {
     }
 }
 
-class ZipArchive {
-    private let archive: [String: Data]
+class ZipHelper {
     
-    init(data: Data) throws {
-        archive = try Self.unzip(data: data)
-    }
-    
-    func fileData(named name: String) -> Data? {
-        return archive[name]
-    }
-    
-    private static func unzip(data: Data) throws -> [String: Data] {
-        var result: [String: Data] = [:]
+    static func extractFile(named fileName: String, from zipData: Data) -> Data? {
+        var index = 0
         
-        guard let archive = Archive(data: data, accessMode: .read) else {
-            return result
-        }
-        
-        for entry in archive {
-            guard entry.type == .file else { continue }
+        while index < zipData.count {
+            guard let localHeader = LocalFileHeader(data: zipData, index: &index) else {
+                break
+            }
             
-            if let data = try? entry.extract() {
-                result[entry.path] = data
+            if localHeader.fileName == fileName {
+                let compressedData = zipData.subdata(in: index..<index + localHeader.compressedSize)
+                return decompress(data: compressedData, method: localHeader.compressionMethod)
+            }
+            
+            index += localHeader.compressedSize
+            
+            if localHeader.dataDescriptorExists {
+                index += 16
             }
         }
         
-        return result
+        return nil
+    }
+    
+    private static func decompress(data: Data, method: UInt16) -> Data? {
+        guard method == 0 || method == 8 else {
+            return nil
+        }
+        
+        if method == 0 {
+            return data
+        }
+        
+        let algorithm = compression_algorithm(rawValue: COMPRESSION_ZLIB)
+        let bufferSize = data.count * 2
+        
+        return data.withUnsafeBytes { sourceBuffer in
+            var destination = [UInt8](repeating: 0, count: bufferSize)
+            
+            return destination.withUnsafeMutableBytes { destinationBuffer in
+                let status = compression_decode_buffer(
+                    destinationBuffer.baseAddress!,
+                    destinationBuffer.count,
+                    sourceBuffer.baseAddress!,
+                    sourceBuffer.count,
+                    nil,
+                    algorithm
+                )
+                
+                guard status != 0 else {
+                    return nil
+                }
+                
+                return Data(destination[0..<status])
+            }
+        }
+    }
+}
+
+struct LocalFileHeader {
+    let fileName: String
+    let compressedSize: Int
+    let compressionMethod: UInt16
+    let dataDescriptorExists: Bool
+    
+    init?(data: Data, index: inout Int) {
+        guard index + 30 <= data.count else {
+            return nil
+        }
+        
+        let signature = data[index..<index+4]
+        guard signature == Data([0x50, 0x4B, 0x03, 0x04]) else {
+            return nil
+        }
+        index += 4
+        
+        let version = data[index..<index+2].uint16
+        index += 2
+        
+        let flags = data[index..<index+2].uint16
+        index += 2
+        
+        compressionMethod = data[index..<index+2].uint16
+        index += 2
+        
+        index += 4
+        index += 4
+        
+        compressedSize = Int(data[index..<index+4].uint32)
+        index += 4
+        
+        index += 4
+        
+        let fileNameLength = Int(data[index..<index+2].uint16)
+        index += 2
+        
+        let extraFieldLength = Int(data[index..<index+2].uint16)
+        index += 2
+        
+        guard index + fileNameLength <= data.count else {
+            return nil
+        }
+        
+        fileName = String(data: data[index..<index+fileNameLength], encoding: .utf8) ?? ""
+        index += fileNameLength
+        index += extraFieldLength
+        
+        dataDescriptorExists = (flags & 0x08) != 0
+    }
+}
+
+extension Data {
+    var uint16: UInt16 {
+        return self.withUnsafeBytes { $0.load(as: UInt16.self) }.bigEndian
+    }
+    
+    var uint32: UInt32 {
+        return self.withUnsafeBytes { $0.load(as: UInt32.self) }.bigEndian
     }
 }
