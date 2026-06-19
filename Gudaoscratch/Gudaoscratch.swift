@@ -136,7 +136,7 @@ class MainViewController: UIViewController {
 
 extension MainViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        dismiss(animated: true) {
+        controller.dismiss(animated: true) {
             if let url = urls.first {
                 self.parseSB3File(url: url)
             }
@@ -144,7 +144,7 @@ extension MainViewController: UIDocumentPickerDelegate {
     }
     
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        dismiss(animated: true)
+        controller.dismiss(animated: true)
     }
 }
 
