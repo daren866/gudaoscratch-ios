@@ -130,9 +130,11 @@ struct DocumentPicker: UIViewControllerRepresentable {
     var onPick: (URL) -> Void
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sb3")!])
+        let sb3Type = UTType(importedAs: "com.scratch.sb3")
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [sb3Type])
         picker.allowsMultipleSelection = false
         picker.delegate = context.coordinator
+        picker.shouldShowFileExtensions = true
         return picker
     }
     
@@ -151,8 +153,14 @@ struct DocumentPicker: UIViewControllerRepresentable {
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             if let url = urls.first {
-                onPick(url)
+                DispatchQueue.main.async {
+                    onPick(url)
+                }
             }
+        }
+        
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            // 用户取消选择，不需要额外处理
         }
     }
 }
