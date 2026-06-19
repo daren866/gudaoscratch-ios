@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct SwiftUIStarterApp: App {
+struct GudaoscratchApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
