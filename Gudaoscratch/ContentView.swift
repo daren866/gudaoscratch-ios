@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @State private var selectedFile: URL?
     @State private var project: SB3Project?
-    @State private var showFilePicker = false
     @State private var parsedInfo = ""
+    @State private var showingPicker = false
     
     var body: some View {
         NavigationView {
@@ -16,7 +16,7 @@ struct ContentView: View {
                         .fontWeight(.bold)
                     
                     Button(action: {
-                        showFilePicker = true
+                        showingPicker = true
                     }) {
                         Text("选择sb3文件")
                             .foregroundColor(.white)
@@ -44,26 +44,16 @@ struct ContentView: View {
                 .padding()
             }
             .navigationBarTitle("Scratch解析器")
-            .fileImporter(
-                isPresented: $showFilePicker,
-                allowedContentTypes: [UTType(filenameExtension: "sb3")!],
-                allowsMultipleSelection: false
-            ) { result in
-                do {
-                    let urls = try result.get()
-                    if let url = urls.first {
-                        selectedFile = url
-                        parseSB3File(url: url)
-                    }
-                } catch {
-                    print("文件选择错误: \(error)")
-                }
-            }
+        }
+        .sheet(isPresented: $showingPicker) {
+            DocumentPicker(onPick: { url in
+                self.selectedFile = url
+                parseSB3File(url: url)
+            })
         }
     }
     
     private func parseSB3File(url: URL) {
-        // 获取安全作用域资源访问权限
         let accessed = url.startAccessingSecurityScopedResource()
         
         DispatchQueue.global(qos: .background).async {
@@ -76,7 +66,6 @@ struct ContentView: View {
                 parseResult = "无法解析该sb3文件"
             }
             
-            // 释放安全作用域资源访问权限
             if accessed {
                 url.stopAccessingSecurityScopedResource()
             }
@@ -134,6 +123,37 @@ struct ContentView: View {
         }
         
         return info
+    }
+}
+
+struct DocumentPicker: UIViewControllerRepresentable {
+    var onPick: (URL) -> Void
+    
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sb3")!])
+        picker.allowsMultipleSelection = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick)
+    }
+    
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        var onPick: (URL) -> Void
+        
+        init(onPick: @escaping (URL) -> Void) {
+            self.onPick = onPick
+        }
+        
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            if let url = urls.first {
+                onPick(url)
+            }
+        }
     }
 }
 
