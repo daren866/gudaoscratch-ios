@@ -1,11 +1,14 @@
-import SwiftUI
+import UIKit
 
 @main
-struct GudaoscratchApp: App {
-    var body: some Scene {
-        WindowGroup {
-            MainViewController().view
-        }
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+    
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = MainViewController()
+        window?.makeKeyAndVisible()
+        return true
     }
 }
 
@@ -57,11 +60,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func selectFile() {
-        let documentTypes = ["com.scratch.sb3", "public.zip", "public.data"]
-        let picker = UIDocumentPickerViewController(documentTypes: documentTypes, in: .import)
+        let picker = UIDocumentPickerViewController(documentTypes: ["public.data"], in: .import)
         picker.allowsMultipleSelection = false
         picker.delegate = self
-        present(picker, animated: true)
+        present(picker, animated: true, completion: nil)
     }
     
     func parseSB3File(url: URL) {
@@ -146,20 +148,4 @@ extension MainViewController: UIDocumentPickerDelegate {
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         controller.dismiss(animated: true)
     }
-}
-
-extension MainViewController {
-    var view: UIViewControllerRepresentable {
-        MainViewControllerRep(viewController: self)
-    }
-}
-
-struct MainViewControllerRep: UIViewControllerRepresentable {
-    let viewController: MainViewController
-    
-    func makeUIViewController(context: Context) -> MainViewController {
-        viewController
-    }
-    
-    func updateUIViewController(_ uiViewController: MainViewController, context: Context) {}
 }
