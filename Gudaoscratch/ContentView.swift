@@ -5,7 +5,6 @@ struct ContentView: View {
     @State private var selectedFile: URL?
     @State private var project: SB3Project?
     @State private var parsedInfo = ""
-    @State private var showingPicker = false
     
     var body: some View {
         NavigationView {
@@ -16,7 +15,7 @@ struct ContentView: View {
                         .fontWeight(.bold)
                     
                     Button(action: {
-                        showingPicker = true
+                        selectFile()
                     }) {
                         Text("选择sb3文件")
                             .foregroundColor(.white)
@@ -45,36 +44,43 @@ struct ContentView: View {
             }
             .navigationBarTitle("Scratch解析器")
         }
-        .sheet(isPresented: $showingPicker) {
-            DocumentPicker(onPick: { url in
-                self.selectedFile = url
-                parseSB3File(url: url)
-            })
+    }
+    
+    private func selectFile() {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item])
+        picker.allowsMultipleSelection = false
+        picker.delegate = DocumentPickerDelegate(onPick: { url in
+            handleFileSelection(url: url)
+        })
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            rootViewController.present(picker, animated: true)
         }
     }
     
-    private func parseSB3File(url: URL) {
+    private func handleFileSelection(url: URL) {
+        selectedFile = url
+        
         let accessed = url.startAccessingSecurityScopedResource()
         
-        DispatchQueue.global(qos: .background).async {
-            var parseResult: String?
-            
-            if let project = SB3Parser.parse(from: url) {
-                self.project = project
-                parseResult = formatProjectInfo(project: project)
-            } else {
-                parseResult = "无法解析该sb3文件"
-            }
-            
+        do {
+            let data = try Data(contentsOf: url)
             if accessed {
                 url.stopAccessingSecurityScopedResource()
             }
             
-            DispatchQueue.main.async {
-                if let result = parseResult {
-                    self.parsedInfo = result
-                }
+            if let project = SB3Parser.parse(from: data) {
+                self.project = project
+                parsedInfo = formatProjectInfo(project: project)
+            } else {
+                parsedInfo = "无法解析该sb3文件"
             }
+        } catch {
+            if accessed {
+                url.stopAccessingSecurityScopedResource()
+            }
+            parsedInfo = "读取文件失败: \(error.localizedDescription)"
         }
     }
     
@@ -126,42 +132,21 @@ struct ContentView: View {
     }
 }
 
-struct DocumentPicker: UIViewControllerRepresentable {
-    var onPick: (URL) -> Void
+class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
+    let onPick: (URL) -> Void
     
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let sb3Type = UTType(importedAs: "com.scratch.sb3")
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [sb3Type])
-        picker.allowsMultipleSelection = false
-        picker.delegate = context.coordinator
-        picker.shouldShowFileExtensions = true
-        return picker
+    init(onPick: @escaping (URL) -> Void) {
+        self.onPick = onPick
+        super.init()
     }
     
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onPick: onPick)
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        onPick(url)
     }
     
-    class Coordinator: NSObject, UIDocumentPickerDelegate {
-        var onPick: (URL) -> Void
-        
-        init(onPick: @escaping (URL) -> Void) {
-            self.onPick = onPick
-        }
-        
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            if let url = urls.first {
-                DispatchQueue.main.async {
-                    self.onPick(url)
-                }
-            }
-        }
-        
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            // 用户取消选择，不需要额外处理
-        }
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        // 用户取消
     }
 }
 

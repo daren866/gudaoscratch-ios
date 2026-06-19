@@ -24,7 +24,8 @@ let project = Project(
             deploymentTargets: deploymentTargets,
             infoPlist: .file(path: "Gudaoscratch/Info.plist"),
             sources: ["Gudaoscratch/**/*.swift"],
-            resources: ["Gudaoscratch/Assets.xcassets"]
+            resources: ["Gudaoscratch/Assets.xcassets"],
+            entitlements: "Gudaoscratch/Gudaoscratch.entitlements"
         )
     ]
 )
