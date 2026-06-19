@@ -63,17 +63,27 @@ struct ContentView: View {
     }
     
     private func parseSB3File(url: URL) {
+        // 获取安全作用域资源访问权限
+        let accessed = url.startAccessingSecurityScopedResource()
+        
         DispatchQueue.global(qos: .background).async {
+            var parseResult: String?
+            
             if let project = SB3Parser.parse(from: url) {
                 self.project = project
-                let info = formatProjectInfo(project: project)
-                
-                DispatchQueue.main.async {
-                    self.parsedInfo = info
-                }
+                parseResult = formatProjectInfo(project: project)
             } else {
-                DispatchQueue.main.async {
-                    self.parsedInfo = "无法解析该sb3文件"
+                parseResult = "无法解析该sb3文件"
+            }
+            
+            // 释放安全作用域资源访问权限
+            if accessed {
+                url.stopAccessingSecurityScopedResource()
+            }
+            
+            DispatchQueue.main.async {
+                if let result = parseResult {
+                    self.parsedInfo = result
                 }
             }
         }
