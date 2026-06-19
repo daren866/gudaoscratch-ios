@@ -8,7 +8,7 @@ struct ContentView: View {
     @State private var parsedInfo = ""
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Scratch解析器")
@@ -43,7 +43,7 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Scratch解析器")
+            .navigationBarTitle("Scratch解析器")
             .fileImporter(
                 isPresented: $showFilePicker,
                 allowedContentTypes: [UTType(filenameExtension: "sb3")!],

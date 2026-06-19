@@ -167,7 +167,7 @@ class BlockMapper {
             for (_, input) in inputs {
                 if input.count >= 2 {
                     let value = input[1]
-                    if let array = value as? [Any], !array.isEmpty {
+                    if let array = value as? [Any], array.count >= 2 {
                         if let str = array[1] as? String {
                             params.append(str)
                         } else if let num = array[1] as? Double {

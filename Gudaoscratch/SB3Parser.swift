@@ -380,7 +380,7 @@ class ZipHelper {
             return data
         }
         
-        let algorithm = compression_algorithm(rawValue: COMPRESSION_ZLIB)
+        let algorithm = COMPRESSION_ZLIB
         let bufferSize = data.count * 2
         
         return data.withUnsafeBytes { sourceBuffer in
@@ -423,7 +423,7 @@ struct LocalFileHeader {
         }
         index += 4
         
-        let version = data[index..<index+2].uint16
+        _ = data[index..<index+2].uint16
         index += 2
         
         let flags = data[index..<index+2].uint16
